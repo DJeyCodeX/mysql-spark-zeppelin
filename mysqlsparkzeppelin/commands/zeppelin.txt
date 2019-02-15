@@ -1,0 +1,98 @@
+URL for Zeppelin UI:
+
+http://ec2-18-237-253-188.us-west-2.compute.amazonaws.com:8890/
+
+1. Create a new note. Click on anonymous(top right-corner) > click on interpreter > 
+navigate to bottom of page till spark > click on edit > change the value of below property to true(by default it is false)
+
+zeppelin.spark.concurrentSQL   false
+
+make it to 
+
+zeppelin.spark.concurrentSQL   true
+
+--- This is enable visualization in zeppelin.
+
+2. Save the changes and open notebook which was created in previous step.
+
+3. Execute below commands in the cells:
+
+%spark
+val a = sc.textFile("/user/ec2-user/Suicides.csv")
+val header = a.first
+val data = a.filter(_ != header)
+case class suicides(state:String,year:Int,causes:String,type1:String,gender:String,agegroup:String,total:Int)
+val suicides_df = data.map(_.split(",")).map(x => suicides(x(0),x(1).toInt,x(2),x(3),x(4),x(5),x(6).toInt)).toDF()
+suicides_df.createOrReplaceTempView("suicides")
+
+// Problem statements
+
+1)Most common suicide cause among females in India over the entire period 2001-2012--
+
+%sql
+select type1,count(total) from suicides where gender = 'Female' group by type1 order by count(total) desc
+
+2)State wise most common cause among males over the entire period--
+
+%sql
+select state,type1,count(total) from suicides where gender = 'Male' group by state,type1 order by count(total) desc
+
+3)Age group wise most common cause among males and females--
+
+%sql
+select agegroup,type1,gender,count(total) from suicides group by agegroup,type1,gender order by count(total) desc
+
+4)Total number of suicides per year per state--
+
+%sql
+select state,year,count(total) from suicides group by state,year
+
+5)What is the main cause for suicides in India over the period 2001-2012--
+
+%sql
+select agegroup,count(total) from suicides where typecode like 'ed%' group by agegroup order by count(total) desc
+
+6)Male suicide rate vs female suicide rate--
+
+%sql
+select gender,count(total) from suicides group by gender
+
+7)Which state has more suicides over the entire period--
+
+%sql
+select state,count(total) from suicides group by state order by count(total) desc
+
+8)group by state,year,causes, count of suicides--
+
+%sql
+select state,year,type1,count(total) from suicides group by state,year,type1
+
+9)group by agegroup, gender, count of suicides--
+
+%sql
+select agegroup,gender,count(total) from suicides group by agegroup,gender
+
+10)state wise most common cause --
+
+%sql
+select state,type1,count(total) from suicides group by state,type1 order by count(total) desc
+
+11)State has more suicides among females and males--
+
+%sql
+select state,gender,count(total) from suicides group by state,gender order by count(total) desc
+
+12)suicides count cause wise(causes)--
+
+%sql
+select causes,type1,count(total) as suicides  from suicides group by causes,type1
+
+13) least cause for suicide--
+
+%sql
+select type1,count(total) from suicides group by type1 order by count(total) asc
+
+14)List out various Categories of suicidal causes--
+
+%sql
+select causes,type1 from suicides group by type1,causes order by causes
